@@ -30,7 +30,7 @@ const expertiseInput = form.querySelector(
 const categoryRadios = form.querySelectorAll("input[name='category']");
 
 // =============================
-// DEFAULT CARDS
+// DEFAULT CARDS (with Unsplash images)
 // =============================
 const defaultTasks = [
   {
@@ -68,11 +68,10 @@ const defaultTasks = [
 ];
 
 // =============================
-// SAVE TO LOCAL STORAGE (with duplicate prevention)
+// SAVE TO LOCAL STORAGE (user-added only)
 // =============================
 function saveToLocalStorage(obj) {
   let oldTasks = JSON.parse(localStorage.getItem("tasks")) || [];
-
   const exists = oldTasks.some(
     (t) =>
       t.fullName === obj.fullName &&
@@ -81,7 +80,6 @@ function saveToLocalStorage(obj) {
       t.purpose === obj.purpose &&
       t.imageUrl === obj.imageUrl
   );
-
   if (!exists) {
     oldTasks.push(obj);
     localStorage.setItem("tasks", JSON.stringify(oldTasks));
@@ -89,30 +87,18 @@ function saveToLocalStorage(obj) {
 }
 
 // =============================
-// OPEN FORM
+// OPEN / CLOSE FORM
 // =============================
-addNote.addEventListener("click", function () {
-  formContainer.style.display = "initial";
-});
-
-// =============================
-// CLOSE FORM
-// =============================
-closeForm.addEventListener("click", function () {
-  formContainer.style.display = "none";
-});
-
-// Close form on background click
+addNote.addEventListener("click", () => (formContainer.style.display = "initial"));
+closeForm.addEventListener("click", () => (formContainer.style.display = "none"));
 window.addEventListener("click", (e) => {
-  if (e.target === formContainer) {
-    formContainer.style.display = "none";
-  }
+  if (e.target === formContainer) formContainer.style.display = "none";
 });
 
 // =============================
 // FORM SUBMIT
 // =============================
-form.addEventListener("submit", function (evt) {
+form.addEventListener("submit", (evt) => {
   evt.preventDefault();
   const imageUrl = imageUrlInput.value.trim();
   const fullName = fullNameInput.value.trim();
@@ -121,32 +107,16 @@ form.addEventListener("submit", function (evt) {
   const expertise = expertiseInput.value.trim();
 
   let selected = false;
-  categoryRadios.forEach(function (cat) {
-    if (cat.checked) {
-      selected = cat.value;
-    }
+  categoryRadios.forEach((cat) => {
+    if (cat.checked) selected = cat.value;
   });
 
-  if (
-    !imageUrl ||
-    !fullName ||
-    !homeTown ||
-    !purpose ||
-    !expertise ||
-    !selected
-  ) {
+  if (!imageUrl || !fullName || !homeTown || !purpose || !expertise || !selected) {
     alert("Please fill all fields and select a category.");
     return;
   }
 
-  saveToLocalStorage({
-    imageUrl,
-    fullName,
-    purpose,
-    homeTown,
-    expertise,
-    selected,
-  });
+  saveToLocalStorage({ imageUrl, fullName, purpose, homeTown, expertise, selected });
 
   form.reset();
   formContainer.style.display = "none";
@@ -159,16 +129,12 @@ form.addEventListener("submit", function (evt) {
 function showCards() {
   stack.innerHTML = "";
 
-  let allTasks = JSON.parse(localStorage.getItem("tasks")) || [];
+  let userTasks = JSON.parse(localStorage.getItem("tasks")) || [];
 
-  // If no tasks, use default tasks
-  if (allTasks.length === 0) {
-    allTasks = defaultTasks;
-  }
+  // Combine default + user tasks
+  let allTasks = [...defaultTasks, ...userTasks].reverse(); // latest on top
 
-  allTasks = allTasks.reverse(); // latest on top
-
-  allTasks.forEach(function (task) {
+  allTasks.forEach((task) => {
     const card = document.createElement("div");
     card.classList.add("card");
 
@@ -222,14 +188,24 @@ function showCards() {
     deleteBtn.classList.add("delete");
     deleteBtn.textContent = "Delete";
 
-    // Only allow delete if not a default card
-    if (!defaultTasks.includes(task)) {
-      deleteBtn.addEventListener("click", function () {
-        deleteCard(task);
-      });
-    } else {
-      deleteBtn.disabled = true; // default cards can't be deleted
-    }
+    // Delete card (removes from DOM, default cards will reappear after refresh)
+    deleteBtn.addEventListener("click", () => {
+      card.remove();
+      if (!defaultTasks.includes(task)) {
+        let stored = JSON.parse(localStorage.getItem("tasks")) || [];
+        stored = stored.filter(
+          (t) =>
+            !(
+              t.fullName === task.fullName &&
+              t.homeTown === task.homeTown &&
+              t.expertise === task.expertise &&
+              t.purpose === task.purpose &&
+              t.imageUrl === task.imageUrl
+            )
+        );
+        localStorage.setItem("tasks", JSON.stringify(stored));
+      }
+    });
 
     buttonsDiv.appendChild(callBtn);
     buttonsDiv.appendChild(msgBtn);
@@ -250,7 +226,7 @@ showCards();
 // =============================
 function updateStack() {
   const cards = document.querySelectorAll(".stack .card");
-  if (cards.length === 0) return;
+  if (!cards.length) return;
 
   cards.forEach((card, i) => {
     if (i < 3) {
@@ -267,7 +243,7 @@ function updateStack() {
 // =============================
 // STACK NAVIGATION
 // =============================
-upBtn.addEventListener("click", function () {
+upBtn.addEventListener("click", () => {
   let lastChild = stack.lastElementChild;
   if (lastChild) {
     stack.insertBefore(lastChild, stack.firstElementChild);
@@ -275,30 +251,10 @@ upBtn.addEventListener("click", function () {
   }
 });
 
-downBtn.addEventListener("click", function () {
+downBtn.addEventListener("click", () => {
   const firstChild = stack.firstElementChild;
   if (firstChild) {
     stack.appendChild(firstChild);
     updateStack();
   }
 });
-
-// =============================
-// DELETE CARD
-// =============================
-function deleteCard(taskToDelete) {
-  let allTasks = JSON.parse(localStorage.getItem("tasks")) || [];
-
-  allTasks = allTasks.filter(function (t) {
-    return !(
-      t.fullName === taskToDelete.fullName &&
-      t.homeTown === taskToDelete.homeTown &&
-      t.expertise === taskToDelete.expertise &&
-      t.purpose === taskToDelete.purpose &&
-      t.imageUrl === taskToDelete.imageUrl
-    );
-  });
-
-  localStorage.setItem("tasks", JSON.stringify(allTasks));
-  showCards();
-}
