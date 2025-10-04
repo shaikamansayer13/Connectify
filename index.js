@@ -30,7 +30,7 @@ const expertiseInput = form.querySelector(
 const categoryRadios = form.querySelectorAll("input[name='category']");
 
 // =============================
-// DEFAULT CARDS (with Unsplash images)
+// DEFAULT CARDS
 // =============================
 const defaultTasks = [
   {
@@ -129,9 +129,10 @@ form.addEventListener("submit", (evt) => {
 function showCards() {
   stack.innerHTML = "";
 
+  // Load user-added cards
   let userTasks = JSON.parse(localStorage.getItem("tasks")) || [];
 
-  // Combine default + user tasks
+  // Combine default + user tasks (defaults always first)
   let allTasks = [...defaultTasks, ...userTasks].reverse(); // latest on top
 
   allTasks.forEach((task) => {
@@ -188,9 +189,9 @@ function showCards() {
     deleteBtn.classList.add("delete");
     deleteBtn.textContent = "Delete";
 
-    // Delete card (removes from DOM, default cards will reappear after refresh)
+    // Delete card
     deleteBtn.addEventListener("click", () => {
-      card.remove();
+      card.remove(); // temporary remove from DOM
       if (!defaultTasks.includes(task)) {
         let stored = JSON.parse(localStorage.getItem("tasks")) || [];
         stored = stored.filter(
