@@ -30,6 +30,44 @@ const expertiseInput = form.querySelector(
 const categoryRadios = form.querySelectorAll("input[name='category']");
 
 // =============================
+// DEFAULT CARDS
+// =============================
+const defaultTasks = [
+  {
+    imageUrl: "https://images.unsplash.com/photo-1595523052653-b9f497845c3d?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    fullName: "John Doe",
+    homeTown: "New York",
+    purpose: "Creative Painter",
+    expertise: "Painter",
+    selected: "Art",
+  },
+  {
+    imageUrl: "https://images.unsplash.com/photo-1536294738309-2fc595e788fb?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    fullName: "Jane Smith",
+    homeTown: "London",
+    purpose: "Professional Dancer",
+    expertise: "Dancer",
+    selected: "Dance",
+  },
+  {
+    imageUrl: "https://plus.unsplash.com/premium_photo-1682600101311-1121bc732450?q=80&w=1742&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    fullName: "Mike Brown",
+    homeTown: "Paris",
+    purpose: "Talented Singer",
+    expertise: "Singer",
+    selected: "Music",
+  },
+  {
+    imageUrl: "https://plus.unsplash.com/premium_photo-1661778091956-15dbe6e47442?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    fullName: "Alice Green",
+    homeTown: "Tokyo",
+    purpose: "Expert Chef",
+    expertise: "Chef",
+    selected: "Cooking",
+  },
+];
+
+// =============================
 // SAVE TO LOCAL STORAGE (with duplicate prevention)
 // =============================
 function saveToLocalStorage(obj) {
@@ -123,42 +161,32 @@ function showCards() {
 
   let allTasks = JSON.parse(localStorage.getItem("tasks")) || [];
 
-  // reverse so latest card is on top
-  allTasks = allTasks.reverse();
-
+  // If no tasks, use default tasks
   if (allTasks.length === 0) {
-    const emptyMsg = document.createElement("div");
-    emptyMsg.classList.add("empty-message");
-    emptyMsg.textContent = "No cards found. Please add one!";
-    stack.appendChild(emptyMsg);
-    return; // stop here since no cards
+    allTasks = defaultTasks;
   }
 
+  allTasks = allTasks.reverse(); // latest on top
+
   allTasks.forEach(function (task) {
-    // Card container
     const card = document.createElement("div");
     card.classList.add("card");
 
-    // --- Card Header (avatar + name on left, expertise on right) ---
     const cardHeader = document.createElement("div");
     cardHeader.classList.add("card-header");
 
-    // Avatar
     const avatar = document.createElement("img");
     avatar.src = task.imageUrl;
     avatar.alt = "profile";
     avatar.classList.add("avatar");
 
-    // Name wrapper
     const name = document.createElement("h2");
     name.textContent = task.fullName;
 
-    // Expertise badge (goes to right)
     const expertiseTag = document.createElement("span");
     expertiseTag.classList.add("expertise-badge");
     expertiseTag.textContent = task.expertise;
 
-    // Left side = avatar + name
     const leftSide = document.createElement("div");
     leftSide.classList.add("left-side");
     leftSide.appendChild(avatar);
@@ -169,19 +197,16 @@ function showCards() {
 
     card.appendChild(cardHeader);
 
-    // --- Info: Home town ---
     const hometownInfo = document.createElement("div");
     hometownInfo.classList.add("info");
     hometownInfo.innerHTML = `<span>Home town</span><span>${task.homeTown}</span>`;
     card.appendChild(hometownInfo);
 
-    // --- Info: Purpose ---
     const bookingsInfo = document.createElement("div");
     bookingsInfo.classList.add("info");
     bookingsInfo.innerHTML = `<span>Purpose</span><span>${task.purpose}</span>`;
     card.appendChild(bookingsInfo);
 
-    // --- Buttons ---
     const buttonsDiv = document.createElement("div");
     buttonsDiv.classList.add("buttons");
 
@@ -193,13 +218,18 @@ function showCards() {
     msgBtn.classList.add("msg");
     msgBtn.textContent = "Message";
 
-    // Delete button
     const deleteBtn = document.createElement("button");
     deleteBtn.classList.add("delete");
     deleteBtn.textContent = "Delete";
-    deleteBtn.addEventListener("click", function () {
-      deleteCard(task);
-    });
+
+    // Only allow delete if not a default card
+    if (!defaultTasks.includes(task)) {
+      deleteBtn.addEventListener("click", function () {
+        deleteCard(task);
+      });
+    } else {
+      deleteBtn.disabled = true; // default cards can't be deleted
+    }
 
     buttonsDiv.appendChild(callBtn);
     buttonsDiv.appendChild(msgBtn);
@@ -220,7 +250,7 @@ showCards();
 // =============================
 function updateStack() {
   const cards = document.querySelectorAll(".stack .card");
-  if (cards.length === 0) return; // nothing to update
+  if (cards.length === 0) return;
 
   cards.forEach((card, i) => {
     if (i < 3) {
@@ -259,23 +289,15 @@ downBtn.addEventListener("click", function () {
 function deleteCard(taskToDelete) {
   let allTasks = JSON.parse(localStorage.getItem("tasks")) || [];
 
-  // filter out the one we want to delete
- allTasks = allTasks.filter(function (t) {
-  if (
-    t.fullName === taskToDelete.fullName &&
-    t.homeTown === taskToDelete.homeTown &&
-    t.expertise === taskToDelete.expertise &&
-    t.purpose === taskToDelete.purpose &&
-    t.imageUrl === taskToDelete.imageUrl
-  ) {
-    // this is the same card → don't keep it
-    return false;
-  } else {
-    // this is a different card → keep it
-    return true;
-  }
-});
-
+  allTasks = allTasks.filter(function (t) {
+    return !(
+      t.fullName === taskToDelete.fullName &&
+      t.homeTown === taskToDelete.homeTown &&
+      t.expertise === taskToDelete.expertise &&
+      t.purpose === taskToDelete.purpose &&
+      t.imageUrl === taskToDelete.imageUrl
+    );
+  });
 
   localStorage.setItem("tasks", JSON.stringify(allTasks));
   showCards();
